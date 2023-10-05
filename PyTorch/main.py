@@ -25,12 +25,12 @@ if __name__ == "__main__":
     X_train, y_train = X[:train_split], y[:train_split]
     X_test, y_test = X[train_split:], y[train_split:]
 
-    hf = int(X_train.shape[0] / (2 * X_train.shape[1]))
-    print(hf)
+    # hf = int(X_train.shape[0] / (2 * X_train.shape[1]))
+    hf = 100
     model = NeuralNetwork(X_train.shape[1], 1, hf)
     model.to(device)
     trainer = Trainer(
-        epochs=10 ** 3,
+        epochs=10 ** 4,
         model=model,
         loss_fn=nn.MSELoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=.05)
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         X_train,
         y_test,
         X_test,
-        10000
+        1000
     )
 
     test(X_train, y_train)
