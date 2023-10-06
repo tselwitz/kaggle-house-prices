@@ -29,29 +29,29 @@ class Trainer():
     self.model.train()
     y_logits = self.model(X_train).squeeze()
     self.loss = self.loss_fn(input=y_logits, target=y_train)
-    self.model.eval()
-
     self.optimizer.zero_grad()
     self.loss.backward()
-    utils.clip_grad_norm_(self.model.parameters(), 1.0)
+    utils.clip_grad_norm_(self.model.parameters(), .8)
     self.optimizer.step()
+    self.model.eval()
     with torch.inference_mode():
       test_logits = self.model(X_test).squeeze()
       self.test_loss = self.loss_fn(test_logits, y_test)
     if self.loss_old and self.test_loss_old:
-      if abs(self.loss + self.test_loss) > abs(self.loss_old + self.test_loss_old):
+      if abs(self.loss + self.test_loss) >= abs(self.loss_old + self.test_loss_old):
         return 0
     self.test_loss_old = self.test_loss
-    self.loss_old = self.loss_old
+    self.loss_old = self.loss
     return 1
   
-  def show_test(self):
-      print(f"Loss: {self.loss:.5E} | Test Loss: {self.test_loss:.5E}") 
+  def show_test(self, epoch):
+      print(f"Epoch {epoch}| Loss: {self.loss:.5E} | Test Loss: {self.test_loss:.5E}") 
   
   def train(self, y_train, X_train, y_test, X_test, test_cadence):
     for e in range(self.epochs):
       status = self.train_loop(y_train, X_train, y_test, X_test)
       if e % test_cadence == 0:
-        self.show_test()
+        self.show_test(e)
       if status == 0:
+        self.show_test(e)
         return

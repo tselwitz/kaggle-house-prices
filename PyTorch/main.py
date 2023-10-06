@@ -33,7 +33,7 @@ if __name__ == "__main__":
     model = NeuralNetwork(X_train.shape[1], 1)
     model.to(device)
     trainer = Trainer(
-        epochs=10 ** 2,
+        epochs=10 ** 5,
         model=model,
         loss_fn=nn.MSELoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=.02)
