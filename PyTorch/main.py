@@ -8,7 +8,14 @@ from DataPrep import clean, split_df
 def test(X, y):
     model.eval()
     with torch.inference_mode():
-        print(sum(abs(model(X).T - y).T) / len(y))
+        pred = model(X)
+        avg_real = (sum(y) / len(y)).item()
+        avg_pred = (sum(pred) / len(pred)).item()
+        avg_deviation = (sum(abs(pred.T - y).T) / len(y)).item()
+        print(f"Avg. Price (Real): ${avg_real:.2f}")
+        print(f"Avg. Price (Predicted): ${avg_pred:.2f}")
+        print(f"Avg. Deviation: ${avg_deviation:.2f}")
+        print(f"% Accuracy (Avg. Deviation / Avg. Real): {1 - (avg_deviation / avg_real):.2%}")
         
 if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
@@ -23,12 +30,10 @@ if __name__ == "__main__":
     X_train, y_train = X[:train_split], y[:train_split]
     X_test, y_test = X[train_split:], y[train_split:]
 
-    # hf = int(X_train.shape[0] / (2 * X_train.shape[1]))
-    # print(hf)
     model = NeuralNetwork(X_train.shape[1], 1)
     model.to(device)
     trainer = Trainer(
-        epochs=10 ** 4,
+        epochs=10 ** 2,
         model=model,
         loss_fn=nn.MSELoss(),
         optimizer=torch.optim.Adam(model.parameters(), lr=.02)
@@ -41,5 +46,7 @@ if __name__ == "__main__":
         1000
     )
 
+    print("\nTrain:")
     test(X_train, y_train)
+    print("\nTest:")
     test(X_test, y_test)
