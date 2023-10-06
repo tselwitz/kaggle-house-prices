@@ -7,12 +7,15 @@ def split_df(df, y_col):
     y = torch.tensor(df[y_col]).type(torch.float32)
     df.pop(y_col)
     features_to_encode = df.keys()
+    df["MSSubClass"] = df["MSSubClass"].astype("object")
+    mm_scaler = MinMaxScaler()
     for feature in features_to_encode:
         if df[feature].dtype == "object":
             df = encode_and_bind(df, feature)
-    X = df.to_numpy(np.float32)
-    scaler = MinMaxScaler()
-    X = scaler.fit_transform(X)
+        elif df[feature].dtype in ["float64", "int64"]:
+            temp = np.array(df[feature]).reshape(1, -1)
+            df[feature] = mm_scaler.fit_transform(temp).T
+    X = df.to_numpy(np.float64)
     X = torch.tensor(X).type(torch.float32)
     return X, y
 
@@ -23,13 +26,9 @@ def encode_and_bind(original_dataframe, feature_to_encode):
     return(res) 
 
 def clean(df):
-    tolerance = int(len(df) * 0)
-    for col in df.columns:
-        if df[col].isnull().sum() > 0:
-            # print(col, df[col].isnull().sum())
-            if df[col].isnull().sum() > tolerance:
-                df.pop(col)
-            else:
-                df[col].replace(np.nan, 0)
+    for col in df:
+        if df[col].dtype == "object":
+            df[col] = df[col].fillna('')
+        else:
+            df[col] = df[col].interpolate()
     return df
-        

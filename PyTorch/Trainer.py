@@ -1,4 +1,5 @@
 import torch
+import torch.nn.utils as utils
 
 class Trainer():
   def __init__(self, epochs, model, loss_fn, optimizer):
@@ -6,6 +7,8 @@ class Trainer():
     self.model = model
     self.loss_fn = loss_fn
     self.optimizer = optimizer
+    self.loss_old = None
+    self.test_loss_old = None
     
   # Calculate accuracy (a classification metric)
   def accuracy_fn(y_true, y_pred):
@@ -22,23 +25,33 @@ class Trainer():
       acc = (correct / len(y_pred)) * 100
       return acc
   
-  def train_loop(self, y_train, X_train):
+  def train_loop(self, y_train, X_train, y_test, X_test):
     self.model.train()
     y_logits = self.model(X_train).squeeze()
     self.loss = self.loss_fn(input=y_logits, target=y_train)
+    self.model.eval()
+
     self.optimizer.zero_grad()
     self.loss.backward()
+    utils.clip_grad_norm_(self.model.parameters(), 1.0)
     self.optimizer.step()
-  
-  def test_model(self, y_test, X_test):
-    self.model.eval()
     with torch.inference_mode():
       test_logits = self.model(X_test).squeeze()
-      test_loss = self.loss_fn(test_logits, y_test)
-      print(f"Loss: {self.loss:.5E} | Test Loss: {test_loss:.5E}") 
+      self.test_loss = self.loss_fn(test_logits, y_test)
+    if self.loss_old and self.test_loss_old:
+      if abs(self.loss + self.test_loss) > abs(self.loss_old + self.test_loss_old):
+        return 0
+    self.test_loss_old = self.test_loss
+    self.loss_old = self.loss_old
+    return 1
+  
+  def show_test(self):
+      print(f"Loss: {self.loss:.5E} | Test Loss: {self.test_loss:.5E}") 
   
   def train(self, y_train, X_train, y_test, X_test, test_cadence):
     for e in range(self.epochs):
-      self.train_loop(y_train, X_train)
+      status = self.train_loop(y_train, X_train, y_test, X_test)
       if e % test_cadence == 0:
-        self.test_model(y_test, X_test)
+        self.show_test()
+      if status == 0:
+        return
