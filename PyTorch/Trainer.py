@@ -38,7 +38,7 @@ class Trainer():
       test_logits = self.model(X_test).squeeze()
       self.test_loss = self.loss_fn(test_logits, y_test)
     if self.loss_old and self.test_loss_old:
-      if abs(self.loss + self.test_loss) >= abs(self.loss_old + self.test_loss_old):
+      if abs(self.test_loss) >= abs(self.test_loss_old):
         return 0
     self.test_loss_old = self.test_loss
     self.loss_old = self.loss
